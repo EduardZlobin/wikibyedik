@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Википедия</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <button id="brand" class="brand" title="Википедия">
+      <span class="brand__logo" aria-hidden="true">W</span>
+      <span class="brand__text">Википедия</span>
+    </button>
+
+    <div class="topbar__search">
+      <input id="searchInput" class="input" type="search" placeholder="Поиск статей…" autocomplete="off" />
+      <button id="clearSearch" class="btn btn--ghost" title="Очистить">✕</button>
+    </div>
+
+    <div class="topbar__actions">
+      <span id="editGateBadge" class="badge" title="Секретный доступ к редактору">Редактор: 🔒</span>
+      <button id="createBtn" class="btn btn--primary hidden">Создать статью</button>
+      <button id="downloadBtn" class="btn hidden">Скачать articles.json</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="side">
+      <div class="card">
+        <div class="card__title">Навигация</div>
+        <nav class="nav">
+          <a class="nav__link" href="#/">Главная</a>
+          <a class="nav__link" href="#/random">Случайная</a>
+          <a class="nav__link" href="#/about">О сайте</a>
+        </nav>
+      </div>
+
+      <div class="card">
+        <div class="card__title">Работа</div>
+        <div class="muted small">
+          Википедия работает с понедельника по пятницу. в иные дни статьи не принимаем
+        </div>
+
+        <div class="fileHints">
+          <div class="fileHints__row">
+            <span class="dot dot--ok"></span>
+            <span>Работаем если не лень.</span>
+          </div>
+          <div class="fileHints__row">
+            <span class="dot dot--warn"></span>
+            <span>Не работаем если лень.</span>
+          </div>
+        </div>
+
+        <!-- НЕ обязательно, но помогает тестировать без замены файла в папке -->
+        <details class="details">
+          <summary>Импорт из файла…</summary>
+          <div class="details__body">
+            <input id="importFile" type="file" accept="application/json" />
+            <div class="muted small">
+              Можете загрузить свою библиотеку локально для тестирования
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div id="tocBox" class="card hidden">
+        <div class="card__title">Содержание</div>
+        <div id="toc" class="toc"></div>
+      </div>
+    </aside>
+
+    <section class="content">
+      <!-- Главная -->
+      <section id="viewHome" class="view hidden">
+        <div class="pageTitle">Главная</div>
+        <div class="muted">
+           Добро пожаловать на Википедию! на главной вы видите все <code>статьи</code> которые могут вам покажаться интересными!
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="card">
+          <div class="card__title">Список статей</div>
+          <div id="articlesList" class="list"></div>
+        </div>
+      </section>
+
+      <!-- Просмотр статьи -->
+      <section id="viewArticle" class="view hidden">
+        <div class="articleHeader">
+          <div class="articleHeader__left">
+            <h1 id="articleTitle" class="articleTitle"></h1>
+            <div id="articleMeta" class="muted small"></div>
+          </div>
+          <div class="articleHeader__right">
+            <button id="editBtn" class="btn hidden">Редактировать</button>
+          </div>
+        </div>
+
+        <article id="articleBody" class="articleBody"></article>
+      </section>
+
+      <!-- Редактор -->
+      <section id="viewEditor" class="view hidden">
+        <div class="editorHeader">
+          <div>
+            <div class="pageTitle" id="editorModeTitle">Редактор</div>
+            <div class="muted small">
+              Сохраняется в памяти вкладки. Чтобы “официально” сохранить — скачай <code>articles.json</code> и замени файл в папке.
+            </div>
+          </div>
+          <div class="editorHeader__actions">
+            <button id="cancelEditBtn" class="btn btn--ghost">Отмена</button>
+            <button id="saveEditBtn" class="btn btn--primary">Сохранить</button>
+          </div>
+        </div>
+
+        <div class="editorForm">
+          <label class="label">Название статьи</label>
+          <input id="editorTitle" class="input" type="text" placeholder="Например: Дробление пакетов" />
+
+          <div class="spacer"></div>
+
+          <div class="toolbar" role="toolbar" aria-label="Панель форматирования">
+            <button class="toolbtn" data-cmd="bold" title="Жирный"><b>B</b></button>
+            <button class="toolbtn" data-cmd="italic" title="Курсив"><i>I</i></button>
+            <button class="toolbtn" data-cmd="underline" title="Подчёркнутый"><u>U</u></button>
+            <span class="toolbar__sep"></span>
+
+            <select id="headingSelect" class="select" title="Заголовок">
+              <option value="p">Текст</option>
+              <option value="h2">Заголовок 2</option>
+              <option value="h3">Заголовок 3</option>
+              <option value="h4">Заголовок 4</option>
+            </select>
+
+            <button class="toolbtn" data-cmd="insertUnorderedList" title="Маркированный список">• список</button>
+            <button class="toolbtn" data-cmd="insertOrderedList" title="Нумерованный список">1. список</button>
+            <span class="toolbar__sep"></span>
+
+            <button id="linkBtn" class="toolbtn" title="Ссылка на статью">🔗 статья</button>
+            <button id="extLinkBtn" class="toolbtn" title="Внешняя ссылка">🌐 ссылка</button>
+            <button id="imageBtn" class="toolbtn" title="Картинка + подпись">🖼️ картинка</button>
+            <span class="toolbar__sep"></span>
+
+            <button id="quoteBtn" class="toolbtn" title="Цитата">❝ цитата</button>
+            <button id="hrBtn" class="toolbtn" title="Разделитель">― линия</button>
+            <button id="cleanBtn" class="toolbtn" title="Убрать форматирование">🧼 очистить</button>
+          </div>
+
+          <div id="editor" class="editor" contenteditable="true" spellcheck="true"></div>
+
+          <div class="muted small">
+            Подсказка: делай секции через Заголовок 2/3 — тогда “Содержание” появится автоматически.
+          </div>
+        </div>
+      </section>
+
+      <!-- О сайте -->
+<section id="viewAbout" class="view hidden">
+  <div class="pageTitle">О сайте</div>
+
+  <div class="card">
+    <div class="card__title">Частые вопросы</div>
+
+    <div class="faq">
+      <div class="faq__item">
+        <div class="faq__q">• Какие темы допустимы для статей?</div>
+        <div class="faq__a">
+          На Википедия вы можете писать статьи на любые темы: от науки и технологий до искусства, культуры, философии и повседневной жизни.
+          Мы поощряем разнообразие мнений и взглядов, если они выражены в уважительной форме.
+        </div>
+      </div>
+
+      <div class="faq__item">
+        <div class="faq__q">• Есть ли ограничения на содержание?</div>
+        <div class="faq__a">
+          Мы стремимся к демократичности, но статьи не должны содержать оскорблений, клеветы, заведомо ложной информации или призывов к нарушению закона.
+          Мы за свободу, но и за ответственность!
+        </div>
+      </div>
+
+      <div class="faq__item">
+        <div class="faq__q">• Как быстро публикуется статья?</div>
+        <div class="faq__a">
+          После отправки статьи на нашу почту мы проверяем её в течение 2–3 рабочих дней.
+          Если всё в порядке, она появится на сайте сразу после модерации.
+        </div>
+      </div>
+
+      <div class="faq__item">
+        <div class="faq__q">• Можно ли редактировать опубликованную статью?</div>
+        <div class="faq__a">
+          Конечно! Если вы хотите внести изменения в уже опубликованную статью, напишите нам на ту же почту с указанием,
+          что нужно исправить или добавить.
+        </div>
+      </div>
+
+      <div class="faq__item">
+        <div class="faq__q">• Можно ли добавлять изображения или мультимедиа?</div>
+        <div class="faq__a">
+          Да, изображения и мультимедиа приветствуются! При отправке статьи приложите файлы или ссылки на них.
+          Главное, чтобы у вас были права на их использование.
+        </div>
+      </div>
+
+      <div class="faq__item">
+        <div class="faq__q">• Как поддерживать Википедия?</div>
+        <div class="faq__a">
+          Вы можете поддержать наш проект, делясь ссылками на статьи, привлекая новых авторов и помогая в развитии платформы.
+          Мы также рады любой финансовой поддержке, если у вас есть такая возможность.
+        </div>
+      </div>
+
+      <div class="faq__item">
+        <div class="faq__q">• Как связаться с нами?</div>
+        <div class="faq__a">
+          Помимо почты <a href="mailto:renat.24.sad@gmail.com">renat.24.sad@gmail.com</a>, вы можете написать нам через нашу форму обратной связи на сайте
+          или в социальных сетях. Мы всегда на связи и открыты к общению!
+        </div>
+      </div>
+
+      <div class="faq__item">
+        <div class="faq__q">• Почему стоит выбрать Википедия?</div>
+        <div class="faq__a">
+          Мы предоставляем платформу для свободного выражения идей и знаний, сохраняя доступность для всех.
+          Википедия — это энциклопедия нового поколения, где каждый голос имеет значение.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+      <!-- Ошибка -->
+      <section id="viewNotFound" class="view hidden">
+        <div class="pageTitle">Страница не найдена</div>
+        <div class="muted">Похоже, такой статьи нет. Проверь название или вернись на главную.</div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="muted small">Единственная Википедия со свободой слова!</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
