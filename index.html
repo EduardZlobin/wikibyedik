@@ -74,13 +74,44 @@
     <section class="content">
       <!-- Главная -->
       <section id="viewHome" class="view hidden">
-        <div class="pageTitle">Главная</div>
-        <div class="muted">
-           Добро пожаловать на Википедию! на главной вы видите все <code>статьи</code> которые могут вам покажаться интересными!
-        </div>
+        
+        <div class="homeWelcome card">
+  <div class="homeWelcome__left">
+    <div class="homeWelcome__title">
+      Добро пожаловать в <span class="homeWelcome__brand">Википедию</span>.
+    </div>
+    <div class="homeWelcome__subtitle muted">
+      свободную энциклопедию, которую может редактировать каждый.
+    </div>
+  </div>
+
+  <div class="homeWelcome__right">
+    <div class="homeWelcome__stats">
+      Сейчас в Википедии:
+      <b id="homeStatArticles">0</b> статей ·
+      <b id="homeStatLinks">0</b> ссылок
+    </div>
+
+    <div class="homeWelcome__links">
+      <a class="homeWelcome__link" href="#/random">Случайная</a>
+      <a class="homeWelcome__link" href="#/about">Справка</a>
+      <button id="homeCreateBtn" class="btn btn--primary hidden">Создать статью</button>
+    </div>
+  </div>
+</div>
 
         <div class="spacer"></div>
+<!-- Портал главной (чтобы не было пусто) -->
+<div id="homePortal" class="portal">
+  <div id="portalFeatured" class="portal__featured card"></div>
 
+  <div class="portal__grid">
+    <div id="portalNew" class="card"></div>
+    <div id="portalRandom" class="card"></div>
+    <div id="portalDidYouKnow" class="card"></div>
+    <div id="portalTimeline" class="card"></div>
+  </div>
+</div>
         <div class="card">
           <div class="card__title">Список статей</div>
           <div id="articlesList" class="list"></div>

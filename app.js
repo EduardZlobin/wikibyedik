@@ -251,6 +251,193 @@ function formatDate(iso){
   }
 }
 
+function stripHTML(html){
+  const div = document.createElement("div");
+  div.innerHTML = html || "";
+  return (div.textContent || "").replace(/\s+/g," ").trim();
+}
+
+function pickSentence(text){
+  const t = (text || "").trim();
+  if(!t) return "";
+  // Берём первую “смысловую” фразу, не уходя в бесконечность
+  const m = t.match(/(.{20,220}?[.!?])(\s|$)/);
+  return (m ? m[1] : t.slice(0, 220)).trim();
+}
+
+function articleHref(title){
+  return `#/${encodeURIComponent(slugifyTitle(title))}`;
+}
+
+function renderHomePortal(listAll){
+  const portal = document.getElementById("homePortal");
+  if(!portal) return;
+
+  const q = (els.searchInput.value || "").trim();
+  portal.classList.toggle("hidden", !!q);
+
+  const featuredEl = document.getElementById("portalFeatured");
+  const newEl = document.getElementById("portalNew");
+  const randomEl = document.getElementById("portalRandom");
+  const dykEl = document.getElementById("portalDidYouKnow");
+  const timeEl = document.getElementById("portalTimeline");
+
+  // 🔧 ЛИМИТЫ
+  const NEW_LIMIT = 3;
+  const TIMELINE_LIMIT = 5;
+
+  // 🔧 ВЫСОТА “полной статьи”
+  const FEATURED_PREVIEW_MAXH = 873;
+
+  const all = listAll
+    .slice()
+    .sort((a,b)=> (b.updatedAt||"").localeCompare(a.updatedAt||""));
+
+  // helper обновления верхнего баннера
+  const updateWelcomeStats = (articlesCount, linksCount) => {
+    const statA = document.getElementById("homeStatArticles");
+    const statL = document.getElementById("homeStatLinks");
+    if(statA) statA.textContent = String(articlesCount);
+    if(statL) statL.textContent = String(linksCount);
+
+    const homeCreate = document.getElementById("homeCreateBtn");
+    if(homeCreate && els.createBtn){
+      const canCreate = !els.createBtn.classList.contains("hidden");
+      homeCreate.classList.toggle("hidden", !canCreate);
+      homeCreate.onclick = () => els.createBtn.click();
+    }
+  };
+
+  if(all.length === 0){
+    updateWelcomeStats(0,0);
+
+    featuredEl.innerHTML = `
+      <div class="portalCardTitle">Портал</div>
+      <div class="portalSnippet">Тут пока пусто — создай первую статью.</div>
+    `;
+    newEl.innerHTML = `<div class="portalCardTitle">Новое</div><div class="muted">Пока пусто.</div>`;
+    randomEl.innerHTML = `<div class="portalCardTitle">Случайная</div><div class="muted">Нет статей.</div>`;
+    dykEl.innerHTML = `<div class="portalCardTitle">Знали ли вы…</div><div class="muted">Пока ничего.</div>`;
+    timeEl.innerHTML = `<div class="portalCardTitle">Лента обновлений</div><div class="muted">Нет обновлений.</div>`;
+    return;
+  }
+
+  const featured = all[0];
+
+  const totalLinks = all.reduce((acc,a)=>{
+    const m = (a.html || "").match(/data-article-title=/g);
+    return acc + (m ? m.length : 0);
+  },0);
+
+  updateWelcomeStats(all.length, totalLinks);
+
+  const featuredHtml = featured.html || "";
+
+  featuredEl.innerHTML = `
+    <div class="portalKicker">Избранное / последнее обновление</div>
+
+    <div class="portalCardTitle">
+      <a class="portalLink" href="${articleHref(featured.title)}">${escapeHTML(featured.title)}</a>
+    </div>
+
+    <div class="portalMeta">
+      <span class="pill">обновлено: ${escapeHTML(formatDate(featured.updatedAt))}</span>
+      <span class="pill">${all.length} статей</span>
+      <span class="pill">${totalLinks} ссылок</span>
+    </div>
+
+    <div class="featuredPreview" id="featuredPreview">
+      <div class="featuredPreview__content" id="featuredPreviewContent" style="max-height:${FEATURED_PREVIEW_MAXH}px">
+        ${featuredHtml || `<p class="muted">Нет текста.</p>`}
+      </div>
+      <div class="featuredPreview__fade"></div>
+      <div class="featuredPreview__more">
+        <a class="btn btn--primary" href="${articleHref(featured.title)}">Читать полностью</a>
+      </div>
+    </div>
+  `;
+
+  const updateFeaturedClamp = () => {
+    const box = document.getElementById("featuredPreview");
+    const content = document.getElementById("featuredPreviewContent");
+    if(!box || !content) return;
+
+    const clamped = (content.scrollHeight - content.clientHeight) > 2;
+    box.classList.toggle("isClamped", clamped);
+
+    if(!clamped){
+      content.style.paddingBottom = "14px";
+    }else{
+      content.style.paddingBottom = "";
+    }
+  };
+
+  requestAnimationFrame(updateFeaturedClamp);
+  setTimeout(updateFeaturedClamp, 250);
+
+  // === Новое
+  const newest = all.slice(0, NEW_LIMIT);
+  newEl.innerHTML = `
+    <div class="portalCardTitle">Новое</div>
+    <div class="portalList">
+      ${newest.map(a=>`
+        <a href="${articleHref(a.title)}">
+          <div><b>${escapeHTML(a.title)}</b></div>
+          <div class="muted small">обновлено: ${escapeHTML(formatDate(a.updatedAt))}</div>
+        </a>
+      `).join("")}
+    </div>
+  `;
+
+  // === Случайная
+  const rnd = all[Math.floor(Math.random()*all.length)];
+  const rndSnippet = pickSentence(stripHTML(rnd.html)) || "Интересная статья.";
+  randomEl.innerHTML = `
+    <div class="portalCardTitle">Случайная</div>
+    <div class="portalRow">
+      <button class="btn" id="portalRandomBtn">🎲 Крутнуть</button>
+      <div class="muted small">Если не желаете выбирать.</div>
+    </div>
+    <div class="portalSnippet">
+      <a class="portalLink" href="${articleHref(rnd.title)}">${escapeHTML(rnd.title)}</a><br/>
+      ${escapeHTML(rndSnippet)}
+    </div>
+  `;
+
+  const btn = document.getElementById("portalRandomBtn");
+  if(btn){
+    btn.onclick = () => location.hash = "#/random";
+  }
+
+  // === Знали ли вы
+  const dykArt = all[Math.floor(Math.random()*all.length)];
+  const dyk = pickSentence(stripHTML(dykArt.html)) || "Факт временно отсутствует.";
+  dykEl.innerHTML = `
+    <div class="portalCardTitle">Знали ли вы…</div>
+    <div class="portalSnippet">• ${escapeHTML(dyk)}</div>
+    <div class="portalMeta">
+      <span class="pill">
+        источник:
+        <a class="portalLink" href="${articleHref(dykArt.title)}">${escapeHTML(dykArt.title)}</a>
+      </span>
+    </div>
+  `;
+
+  // === Лента
+  const timeline = all.slice(0, TIMELINE_LIMIT);
+  timeEl.innerHTML = `
+    <div class="portalCardTitle">Лента обновлений</div>
+    <div class="portalList">
+      ${timeline.map(a=>`
+        <a href="${articleHref(a.title)}">
+          <div class="muted small">${escapeHTML(formatDate(a.updatedAt))}</div>
+          <div><b>${escapeHTML(a.title)}</b></div>
+        </a>
+      `).join("")}
+    </div>
+  `;
+}
+
 function renderHome(){
   els.tocBox.classList.add("hidden");
 
@@ -258,10 +445,16 @@ function renderHome(){
 
   const q = (els.searchInput.value || "").trim().toLowerCase();
   const list = STATE.data.articles
-    .slice()
-    .sort((a,b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))
-    .filter(a => !q || a.title.toLowerCase().includes(q));
-
+  .slice()
+  .filter(a => {
+    const t = (a.title || "").toLowerCase();
+    return !q || t.includes(q);
+  })
+  .sort((a,b) =>
+    (a.title || "").localeCompare(b.title || "", "ru", { sensitivity: "base" })
+  );
+  // Портал главной рисуем по полному списку (без фильтра)
+  renderHomePortal(STATE.data.articles);
   if(list.length === 0){
     els.articlesList.innerHTML = `
       <div class="muted">
